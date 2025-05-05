@@ -9,8 +9,12 @@ import java.util.List;
 @Repository
 public class UserRepositoryImpl implements UserRepository {
 
-    @PersistenceContext
     private EntityManager entityManager;
+
+    @PersistenceContext
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public List<User> getAllUsers() {
