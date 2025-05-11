@@ -21,11 +21,13 @@ public class User {
     private String surname;
 
 
-    public void user(String firstName, String lastName, String email) {
-        this.name = firstName;
-        this.email = email;
-        this.surname = lastName;
+    public User() {
+    }
 
+    public User(String name, String surname, String email) {
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
     }
 
     public Long getId() {
@@ -57,6 +59,4 @@ public class User {
         return String.format("User [id = %d; name = %s; email = %s; surname = %s]",
                 id, name, email, surname);
     }
-
-
 }
