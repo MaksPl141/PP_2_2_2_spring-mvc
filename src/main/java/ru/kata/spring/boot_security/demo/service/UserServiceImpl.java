@@ -1,54 +1,60 @@
 package ru.kata.spring.boot_security.demo.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.Repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import ru.kata.spring.boot_security.demo.repository.UserRepository;
 import ru.kata.spring.boot_security.demo.model.User;
 
 import java.util.List;
 
+
 @Service
-@Transactional
 public class UserServiceImpl implements UserService {
-
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
+    @Transactional
+    public void saveUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-        return userRepository.getAllUsers();
+        return userRepository.findAll();
     }
 
     @Override
-    public void deleteUser(long id) {
-        userRepository.deleteUser(id);
-    }
-
-    @Override
-    public void createOrUpdateUser(User user) {
-        if (user.getId() == null || userRepository.readUser(user.getId()) == null) {
-            userRepository.createUser(user);
-        } else {
-            userRepository.updateUser(user);
-        }
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public User getUserById(Long id) {
-        return userRepository.readUser(id);
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
-    public void saveOrUpdateUser(User user) {
-        createOrUpdateUser(user);
+    @Transactional
+    public void updateUser(User user) {
+        if (!user.getPassword().equals(userRepository.findById(user.getId()).get().getPassword())) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        userRepository.save(user);
     }
 
     @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
     }

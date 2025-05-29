@@ -1,0 +1,21 @@
+<h1 xmlns:c="" xmlns:c="" xmlns:c="">Admin Panel</h1>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Actions</th>
+    </tr>
+    <c:forEach var="user" items="${users}">
+        <tr>
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td>
+                <a href="/admin/edit/${user.id}">Edit</a>
+                <a href="/admin/delete/${user.id}">Delete</a>
+            </td>
+        </tr>
+    </c:forEach>
+</table>
+<a href="/admin/new">Add New User</a>
