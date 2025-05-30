@@ -1,7 +1,26 @@
-<h2>Add New User</h2>
-<form action="/admin/save" method="post">
-    Name: <input type="text" name="name"><br>
-    Email: <input type="text" name="email"><br>
-    Password: <input type="password" name="password"><br>
-    <button type="submit">Save</button>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить пользователя</title>
+</head>
+<body>
+<h1>Новый пользователь</h1>
+
+<!-- CSRF-токен передается автоматически, т.к. используется th:action -->
+<form th:action="@{/admin/save}" method="post">
+    <input type="text" name="username" placeholder="Логин" required>
+    <input type="password" name="password" placeholder="Пароль" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="number" name="age" placeholder="Возраст" required>
+
+    <!-- Выбор ролей (если есть) -->
+    <div th:each="role : ${roles}">
+        <input type="checkbox" name="roles" th:value="${role.id}">
+        <label th:text="${role.name}"></label>
+    </div>
+
+    <button type="submit">Сохранить</button>
 </form>
+</body>
+</html>

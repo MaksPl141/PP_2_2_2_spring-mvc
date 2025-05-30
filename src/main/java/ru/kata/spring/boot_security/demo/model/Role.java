@@ -5,7 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import java.util.Set;
 
 @Entity
-@Table(name = "Roles")
+@Table(name = "roles")
 public class Role implements GrantedAuthority {
 
     @Id
@@ -15,6 +15,7 @@ public class Role implements GrantedAuthority {
     @Column(name = "name", unique = true)
     private String name;
 
+    @Transient
     @ManyToMany(mappedBy = "roles")
     private Set<User> users;
 
@@ -22,8 +23,9 @@ public class Role implements GrantedAuthority {
     }
 
     public Role(String name) {
-        this.name = name;
+        this.name = name.startsWith("ROLE_") ? name : "ROLE_" + name;
     }
+
 
     public Long getId() {
         return id;

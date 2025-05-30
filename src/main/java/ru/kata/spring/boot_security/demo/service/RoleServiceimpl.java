@@ -16,16 +16,12 @@ public class RoleServiceimpl implements RoleService {
     public void RoleServiceImpl(RoleRepository roleRepository) {
         this.roleRepository = roleRepository;
     }
-
+    @Autowired
     public RoleServiceimpl(RoleRepository roleRepository) {
         this.roleRepository = roleRepository;
     }
 
-    @Override
-    @Transactional
-    public void saveRole(Role role) {
-        roleRepository.save(role);
-    }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -35,6 +31,6 @@ public class RoleServiceimpl implements RoleService {
 
     @Override
     public List<Role> getAllRoles() {
-        return List.of();
+        return roleRepository.findAll();
     }
 }
