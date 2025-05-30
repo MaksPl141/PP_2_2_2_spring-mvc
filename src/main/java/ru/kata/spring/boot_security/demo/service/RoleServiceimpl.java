@@ -21,8 +21,6 @@ public class RoleServiceimpl implements RoleService {
         this.roleRepository = roleRepository;
     }
 
-
-
     @Override
     @Transactional(readOnly = true)
     public Role findByName(String name) {

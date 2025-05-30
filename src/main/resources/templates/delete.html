@@ -19,9 +19,8 @@
                 <p><strong>Email:</strong> <span th:text="${user.email}"></span></p>
             </div>
 
-            <!-- Форма для удаления (POST) -->
             <form th:action="@{/admin/delete/${user.id}}" method="post">
-                <!-- CSRF-токен для защиты -->
+
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
                 <button type="submit" class="btn btn-danger">Удалить</button>

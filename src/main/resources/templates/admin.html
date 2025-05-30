@@ -59,10 +59,10 @@
 <body>
 <h1>Admin Panel</h1>
 
-<!-- Ссылка для добавления нового пользователя -->
+
 <a href="/admin/new" class="add-user">Add New User</a>
 
-<!-- Таблица пользователей -->
+
 <table>
     <thead>
     <tr>
@@ -73,19 +73,18 @@
     </tr>
     </thead>
     <tbody>
-    <!-- Проверка на наличие пользователей -->
+
     <tr th:if="${users == null || users.isEmpty()}">
         <td colspan="4">No users found</td>
     </tr>
-    <!-- Цикл для отображения пользователей -->
+
     <tr th:each="user : ${users}">
         <td th:text="${user.id}">ID</td>
         <td th:text="${user.username}">Name</td>
         <td th:text="${user.email}">Email</td>
         <td>
-            <!-- Кнопка для редактирования -->
+
             <a th:href="@{/admin/edit/{id}(id=${user.id})}" style="margin-right: 10px;">Edit</a>
-            <!-- Кнопка для удаления -->
             <form th:action="@{/admin/delete/{id}(id=${user.id})}" method="post" style="display:inline;">
                 <button type="submit">Delete</button>
             </form>

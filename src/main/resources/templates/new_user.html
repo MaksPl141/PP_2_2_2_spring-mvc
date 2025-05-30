@@ -7,7 +7,7 @@
 <body>
 <h1>Новый пользователь</h1>
 
-<!-- CSRF-токен передается автоматически, т.к. используется th:action -->
+
 <form th:action="@{/admin/save}" method="post">
     <input type="text" name="username" placeholder="Логин" required>
     <input type="password" name="password" placeholder="Пароль" required>
