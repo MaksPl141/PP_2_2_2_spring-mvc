@@ -9,6 +9,5 @@ public interface RoleService {
 
     @Transactional(readOnly = true)
     Role findByName(String name);
-
     List<Role> getAllRoles();
 }

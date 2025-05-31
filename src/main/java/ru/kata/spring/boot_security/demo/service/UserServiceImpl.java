@@ -46,10 +46,14 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
     @Transactional
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.getRoles().clear();
+        userRepository.save(user);
+
+        userRepository.delete(user);
     }
 
     @Override

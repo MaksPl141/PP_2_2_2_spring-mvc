@@ -1,8 +1,8 @@
 package ru.kata.spring.boot_security.demo.controller;
+import org.springframework.ui.Model;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.service.RoleService;
@@ -24,7 +24,11 @@ public class AdminController {
 
     @GetMapping
     public String adminPage(Principal principal, Model model) {
+        User currentUser = userService.findByUsername(principal.getName());
+        model.addAttribute("currentUser", currentUser);
+
         model.addAttribute("users", userService.getAllUsers());
+        model.addAttribute("allRoles", roleService.getAllRoles());
         return "admin";
     }
 
@@ -35,7 +39,7 @@ public class AdminController {
         return "new_user";
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public String createUser(@ModelAttribute("user") User user) {
         userService.saveUser(user);
         return "redirect:/admin";
@@ -48,26 +52,25 @@ public class AdminController {
         return "edit_user";
     }
 
-    @PostMapping("/edit")
-    public String updateUser(@ModelAttribute("user") User user) {
+    @PostMapping("/update/{id}")
+    public String updateUser(@PathVariable("id") Long id, @ModelAttribute("user") User user) {
+        user.setId(id);
         userService.updateUser(user);
         return "redirect:/admin";
     }
 
     @GetMapping("/delete/{id}")
-    public String deleteUser(@PathVariable("id") Long id) {
-        userService.deleteUser(id);
-        return "redirect:/admin";
+    public String showDeleteConfirmation(@PathVariable("id") Long id, Model model) {
+
+        model.addAttribute("user", userService.getUserById(id));
+        return "delete_confirmation";
     }
+
     @PostMapping("/delete/{id}")
     public String processDelete(@PathVariable("id") Long id) {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
 
-    @PostMapping("/save")
-    public String saveUser(@ModelAttribute("user") User user) {
-        userService.saveUser(user);
-        return "redirect:/admin";
-    }
+
 }
