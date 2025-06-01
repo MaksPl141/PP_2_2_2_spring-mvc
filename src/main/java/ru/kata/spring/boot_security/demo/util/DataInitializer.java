@@ -27,8 +27,10 @@ public class DataInitializer {
     @PostConstruct
     public void init() {
         if (roleRepository.count() == 0) {
-            Role adminRole = new Role("ADMIN");
-            Role userRole = new Role("USER");
+            Role adminRole = new Role(1L);
+            adminRole.setName("ROLE_ADMIN");
+            Role userRole = new Role(2L);
+            adminRole.setName("ROLE_USER");
             roleRepository.saveAll(List.of(adminRole, userRole));
 
 

@@ -1,4 +1,5 @@
 package ru.kata.spring.boot_security.demo.controller;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.ui.Model;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,10 +17,12 @@ import java.security.Principal;
 public class AdminController {
     private final UserService userService;
     private final RoleService roleService;
+    private final PasswordEncoder passwordEncoder;
 
-    public AdminController(UserService userService, RoleService roleService) {
+    public AdminController(UserService userService, RoleService roleService, PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.roleService = roleService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
@@ -53,9 +56,24 @@ public class AdminController {
     }
 
     @PostMapping("/update/{id}")
-    public String updateUser(@PathVariable("id") Long id, @ModelAttribute("user") User user) {
-        user.setId(id);
-        userService.updateUser(user);
+    public String updateUser(@PathVariable("id") Long id,
+                             @RequestBody User updatedUser) {
+    User existingUser = userService.getUserById(id);
+
+
+        existingUser.setUsername(updatedUser.getUsername());
+        existingUser.setLastname(updatedUser.getLastname());
+        existingUser.setAge(updatedUser.getAge());
+        existingUser.setEmail(updatedUser.getEmail());
+
+
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+
+        existingUser.setRoles(updatedUser.getRoles());
+
+        userService.updateUser(existingUser);
         return "redirect:/admin";
     }
 
@@ -71,6 +89,5 @@ public class AdminController {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
-
 
 }

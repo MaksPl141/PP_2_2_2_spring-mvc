@@ -23,6 +23,7 @@ public class WebSecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -45,7 +46,6 @@ public class WebSecurityConfig {
 
         return http.build();
     }
-
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
