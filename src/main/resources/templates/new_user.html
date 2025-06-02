@@ -7,17 +7,23 @@
 <body>
 <h1>Новый пользователь</h1>
 
-
-<form th:action="@{/admin/save}" method="post">
+<form th:action="@{/admin}" method="post">
     <input type="text" name="username" placeholder="Логин" required>
     <input type="password" name="password" placeholder="Пароль" required>
+    <input type="text" name="lastname" placeholder="Фамилия" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="number" name="age" placeholder="Возраст" required>
 
-    <!-- Выбор ролей (если есть) -->
-    <div th:each="role : ${roles}">
-        <input type="checkbox" name="roles" th:value="${role.id}">
-        <label th:text="${role.name}"></label>
+    <!-- Выбор ролей -->
+    <div>
+        <h3>Роли:</h3>
+        <div th:each="role : ${allRoles}">
+            <input type="checkbox"
+                   name="selectedRoles"
+                   th:value="${role.id}"
+                   th:id="${'role_' + role.id}">
+            <label th:for="${'role_' + role.id}" th:text="${role.name}"></label>
+        </div>
     </div>
 
     <button type="submit">Сохранить</button>
