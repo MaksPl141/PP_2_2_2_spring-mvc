@@ -44,6 +44,7 @@ public class AdminController {
 
     @PostMapping("/create")
     public String createUser(@ModelAttribute("user") User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userService.saveUser(user);
         return "redirect:/admin";
     }
@@ -57,15 +58,13 @@ public class AdminController {
 
     @PostMapping("/update/{id}")
     public String updateUser(@PathVariable("id") Long id,
-                             @RequestBody User updatedUser) {
+                             @ModelAttribute("user") User updatedUser) {
         User existingUser = userService.getUserById(id);
-
 
         existingUser.setUsername(updatedUser.getUsername());
         existingUser.setLastname(updatedUser.getLastname());
         existingUser.setAge(updatedUser.getAge());
         existingUser.setEmail(updatedUser.getEmail());
-
 
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
             existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
@@ -74,9 +73,9 @@ public class AdminController {
         existingUser.setRoles(updatedUser.getRoles());
 
         userService.updateUser(existingUser);
+
         return "redirect:/admin";
     }
-
     @GetMapping("/delete/{id}")
     public String showDeleteConfirmation(@PathVariable("id") Long id, Model model) {
 

@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
     public void updateUser(User user) {
         if (!user.getPassword().equals(userRepository.findById(user.getId()).get().getPassword())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+            userRepository.save(user);
         }
         userRepository.save(user);
     }
