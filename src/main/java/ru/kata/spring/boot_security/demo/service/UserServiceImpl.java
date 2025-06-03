@@ -11,6 +11,7 @@ import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -31,31 +32,63 @@ public class UserServiceImpl implements UserService {
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
+
     @Override
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
     }
 
     @Override
     @Transactional
-    public void updateUser(User user) {
-        if (!user.getPassword().equals(userRepository.findById(user.getId()).get().getPassword())) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            userRepository.save(user);
+    public void updateUser(Long id, User updatedUser) {
+        User existingUser = getUserById(id);
+
+        existingUser.setUsername(updatedUser.getUsername());
+        existingUser.setLastname(updatedUser.getLastname());
+        existingUser.setAge(updatedUser.getAge());
+        existingUser.setEmail(updatedUser.getEmail());
+
+        // Валидация данных пользователя перед обновлением
+        if (updatedUser.getUsername() == null || updatedUser.getUsername().isEmpty()) {
+            throw new IllegalArgumentException("Имя пользователя не может быть пустым.");
         }
-        userRepository.save(user);
+
+        if (updatedUser.getEmail() == null || updatedUser.getEmail().isEmpty()) {
+            throw new IllegalArgumentException("Email не может быть пустым.");
+        }
+
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+
+        existingUser.setRoles(updatedUser.getRoles());
+        userRepository.save(existingUser);
     }
 
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден для удаления с ID: " + id));
+
+        user.getRoles().clear();
+        userRepository.save(user);
+
+        userRepository.delete(user);
     }
 
     @Override
     @Transactional(readOnly = true)
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    // Новый метод для создания пользователя с кодированием пароля
+    @Transactional
+    public void createUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userRepository.save(user);
     }
 }

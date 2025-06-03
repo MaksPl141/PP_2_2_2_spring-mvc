@@ -15,21 +15,19 @@ import java.security.Principal;
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
+
     private final UserService userService;
     private final RoleService roleService;
-    private final PasswordEncoder passwordEncoder;
 
-    public AdminController(UserService userService, RoleService roleService, PasswordEncoder passwordEncoder) {
+    public AdminController(UserService userService, RoleService roleService) {
         this.userService = userService;
         this.roleService = roleService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
     public String adminPage(Principal principal, Model model) {
         User currentUser = userService.findByUsername(principal.getName());
         model.addAttribute("currentUser", currentUser);
-
         model.addAttribute("users", userService.getAllUsers());
         model.addAttribute("allRoles", roleService.getAllRoles());
         return "admin";
@@ -44,8 +42,7 @@ public class AdminController {
 
     @PostMapping("/create")
     public String createUser(@ModelAttribute("user") User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userService.saveUser(user);
+        userService.createUser(user);
         return "redirect:/admin";
     }
 
@@ -57,28 +54,13 @@ public class AdminController {
     }
 
     @PostMapping("/update/{id}")
-    public String updateUser(@PathVariable("id") Long id,
-                             @ModelAttribute("user") User updatedUser) {
-        User existingUser = userService.getUserById(id);
-
-        existingUser.setUsername(updatedUser.getUsername());
-        existingUser.setLastname(updatedUser.getLastname());
-        existingUser.setAge(updatedUser.getAge());
-        existingUser.setEmail(updatedUser.getEmail());
-
-        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-        }
-
-        existingUser.setRoles(updatedUser.getRoles());
-
-        userService.updateUser(existingUser);
-
+    public String updateUser(@PathVariable("id") Long id, @ModelAttribute("user") User updatedUser) {
+        userService.updateUser(id, updatedUser);
         return "redirect:/admin";
     }
+
     @GetMapping("/delete/{id}")
     public String showDeleteConfirmation(@PathVariable("id") Long id, Model model) {
-
         model.addAttribute("user", userService.getUserById(id));
         return "delete_confirmation";
     }
@@ -88,5 +70,4 @@ public class AdminController {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
-
 }
