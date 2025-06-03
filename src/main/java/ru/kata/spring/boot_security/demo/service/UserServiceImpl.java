@@ -50,7 +50,6 @@ public class UserServiceImpl implements UserService {
         existingUser.setAge(updatedUser.getAge());
         existingUser.setEmail(updatedUser.getEmail());
 
-        // Валидация данных пользователя перед обновлением
         if (updatedUser.getUsername() == null || updatedUser.getUsername().isEmpty()) {
             throw new IllegalArgumentException("Имя пользователя не может быть пустым.");
         }
@@ -78,14 +77,12 @@ public class UserServiceImpl implements UserService {
 
         userRepository.delete(user);
     }
-
     @Override
     @Transactional(readOnly = true)
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
-    // Новый метод для создания пользователя с кодированием пароля
     @Transactional
     public void createUser(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));

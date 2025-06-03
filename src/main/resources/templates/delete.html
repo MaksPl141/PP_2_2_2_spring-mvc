@@ -19,7 +19,6 @@
                 <p><strong>Email:</strong> <span th:text="${user.email}"></span></p>
             </div>
 
-            <!-- Форма для удаления пользователя -->
             <form th:action="@{/admin/delete/{id}(id=${user.id})}" method="post">
                 <input type="hidden" name="_method" value="DELETE"/> <!-- Для имитации DELETE метода -->
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
