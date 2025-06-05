@@ -1,100 +1,91 @@
-// Обработчик открытия модального окна редактирования
-document.addEventListener('DOMContentLoaded', function() {
-    const editModal = document.getElementById('editUserModal');
-    if (editModal) {
-        editModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const modal = this;
+document.addEventListener('DOMContentLoaded', () => {
+    const editUserModal = document.getElementById('editUserModal');
+    const editUserForm = document.getElementById('editUserForm');
 
-            modal.querySelector('#editUserId').value = button.getAttribute('data-user-id');
-            modal.querySelector('#displayId').value = button.getAttribute('data-user-id');
-            modal.querySelector('#editUsername').value = button.getAttribute('data-user-username');
-            modal.querySelector('#editLastname').value = button.getAttribute('data-user-lastname');
-            modal.querySelector('#editAge').value = button.getAttribute('data-user-age');
-            modal.querySelector('#editEmail').value = button.getAttribute('data-user-email');
+    editUserModal.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
 
-            modal.querySelectorAll('.role-checkbox').forEach(checkbox => {
-                checkbox.checked = false;
+        const userId = button.getAttribute('data-user-id');
+        const username = button.getAttribute('data-user-username');
+        const lastname = button.getAttribute('data-user-lastname');
+        const age = button.getAttribute('data-user-age');
+        const email = button.getAttribute('data-user-email');
+        const rolesStr = button.getAttribute('data-user-roles');
+
+        document.getElementById('editUserId').value = userId;
+        document.getElementById('displayId').value = userId;
+        document.getElementById('editUsername').value = username;
+        document.getElementById('editLastname').value = lastname;
+        document.getElementById('editAge').value = age;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editPassword').value = '';
+
+        const form = editUserModal.querySelector('form');
+        form.setAttribute('action', `/admin/update/${userId}`);
+
+        document.querySelectorAll('.role-checkbox').forEach(chk => chk.checked = false);
+
+        if (rolesStr) {
+            const rolesIds = rolesStr.split(',');
+            rolesIds.forEach(roleId => {
+                const checkbox = document.getElementById(`editRole-${roleId.trim()}`);
+                if (checkbox) checkbox.checked = true;
             });
+        }
+    });
 
-            const roles = button.getAttribute('data-user-roles').split(',');
-            modal.querySelectorAll('.role-checkbox').forEach(checkbox => {
-                if (roles.includes(checkbox.value)) {
-                    checkbox.checked = true;
-                }
-            });
-        });
-    }
+    const deleteUserModal = document.getElementById('deleteUserModal');
+    const deleteUserForm = document.getElementById('deleteUserForm');
 
-    const deleteModal = document.getElementById('deleteUserModal');
-    if (deleteModal) {
-        deleteModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const modal = this;
+    deleteUserModal.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
 
-            modal.querySelector('#deleteUserName').textContent = button.getAttribute('data-user-username');
-            modal.querySelector('#deleteUserId').value = button.getAttribute('data-user-id');
-            modal.querySelector('#deleteUserForm').action = '/admin/delete/' + button.getAttribute('data-user-id');
-        });
-    }
+        const userId = button.getAttribute('data-user-id');
+        const username = button.getAttribute('data-user-username');
+        const lastname = button.getAttribute('data-user-lastname');
+        const age = button.getAttribute('data-user-age');
+        const email = button.getAttribute('data-user-email');
+        const rolesStr = button.getAttribute('data-user-roles');
 
-    const editForm = document.getElementById('editUserForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+        document.getElementById('deleteUserIdDisplay').textContent = userId;
+        document.getElementById('deleteUserFirstName').textContent = username;
+        document.getElementById('deleteUserLastName').textContent = lastname;
+        document.getElementById('deleteUserAge').textContent = age;
+        document.getElementById('deleteUserEmail').textContent = email;
+        document.getElementById('deleteUserRoles').textContent = rolesStr;
 
-            const formData = new FormData(this);
-            const userId = formData.get('id');
-            const url = '/admin/update/' + userId;
+        document.getElementById('deleteUserId').value = userId;
+    });
 
-            const data = {
-                id: formData.get('id'),
-                username: formData.get('username'),
-                lastname: formData.get('lastname'),
-                age: formData.get('age'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                roles: Array.from(document.querySelectorAll('#editUserModal input[name="roles"]:checked'))
-                    .map(checkbox => checkbox.value)
-            };
+    deleteUserForm.addEventListener('submit', async e => {
+        e.preventDefault();
 
-            fetch(url, {
+        const userId = document.getElementById('deleteUserId').value;
+        const csrfToken = deleteUserForm.querySelector('input[name="_csrf"]').value;
+
+        try {
+            const response = await fetch(`/admin/delete/${userId}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_csrf"]').value
-                },
-                body: JSON.stringify(data)
-            })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.reload();
-                    } else {
-                        alert('Error updating user');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error updating user');
-                });
-        });
-    }
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete user');
+            }
+
+            const modalInstance = bootstrap.Modal.getInstance(deleteUserModal);
+            modalInstance.hide();
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert(error.message || 'Error deleting user');
+        }
+    });
 });
-
-function showAlert(message, type) {
-    const alertContainer = document.querySelector('.alert-container');
-    if (!alertContainer) return;
-
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type} alert-dismissible fade show`;
-    alert.role = 'alert';
-    alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    alertContainer.appendChild(alert);
-
-    setTimeout(() => {
-        alert.remove();
-    }, 5000);
-}

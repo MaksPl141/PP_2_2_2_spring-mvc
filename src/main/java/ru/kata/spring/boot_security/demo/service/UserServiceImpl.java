@@ -1,6 +1,5 @@
 package ru.kata.spring.boot_security.demo.service;
 
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,21 +26,61 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Override
     @Transactional
     public void saveUser(User user) {
-
         Set<Role> managedRoles = new HashSet<>();
         for (Role role : user.getRoles()) {
             Role existingRole = roleRepository.findByName(role.getName())
                     .orElseThrow(() -> new IllegalArgumentException("Role " + role.getName() + " not found"));
             managedRoles.add(existingRole);
         }
+
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRoles(managedRoles);
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
+    }
 
+    @Override
+    @Transactional
+    public void updateUser(Long id, User updatedUser) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+
+        if (updatedUser.getUsername() != null && !updatedUser.getUsername().isEmpty()) {
+            existingUser.setUsername(updatedUser.getUsername());
+        }
+
+        if (updatedUser.getLastname() != null && !updatedUser.getLastname().isEmpty()) {
+            existingUser.setLastname(updatedUser.getLastname());
+        }
+
+        if (updatedUser.getAge() != null && updatedUser.getAge() > 0) {
+            existingUser.setAge(updatedUser.getAge());
+        }
+
+        if (updatedUser.getEmail() != null && !updatedUser.getEmail().isEmpty()) {
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+
+        if (updatedUser.getRoles() != null && !updatedUser.getRoles().isEmpty()) {
+            Set<Role> managedRoles = new HashSet<>();
+            for (Role role : updatedUser.getRoles()) {
+                Role existingRole = roleRepository.findById(role.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + role.getId()));
+                managedRoles.add(existingRole);
+            }
+            existingUser.setRoles(managedRoles);
+        }
+
+        userRepository.save(existingUser);
     }
 
     @Override
@@ -56,21 +95,11 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
     }
-    @Transactional
-    @Override
-    public void updateUser(User user) {
-        if (!user.getPassword().equals(userRepository.findById(user.getId())
-                .orElseThrow(() -> new UsernameNotFoundException("Ошибка обработки изменений пользователя с Id: " + user.getId()))
-                .getPassword()))
 
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-    }
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = getUserById(id);
         user.getRoles().clear();
         userRepository.delete(user);
     }
@@ -80,4 +109,5 @@ public class UserServiceImpl implements UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+
 }

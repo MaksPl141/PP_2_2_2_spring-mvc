@@ -70,6 +70,39 @@
             z-index: 1100;
             min-width: 300px;
         }
+        /* Стили для модального окна удаления */
+        .modal-content {
+            border-radius: 10px;
+        }
+        .modal-header {
+            border-bottom: 1px solid #dee2e6;
+            padding: 15px 20px;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .user-info-row {
+            margin-bottom: 15px;
+        }
+        .user-info-label {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .user-info-value {
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .modal-footer {
+            border-top: none;
+            padding: 15px 20px;
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
@@ -84,10 +117,8 @@
     </form>
 </div>
 
-<!-- Контейнер для уведомлений -->
 <div class="alert-container"></div>
 
-<!-- Меню слева -->
 <div class="sidebar">
     <ul class="nav flex-column">
         <li class="nav-item">
@@ -99,7 +130,6 @@
     </ul>
 </div>
 
-<!-- Основное содержимое -->
 <div class="content main-content">
     <h2>Admin panel</h2>
 
@@ -150,7 +180,11 @@
                             data-bs-toggle="modal"
                             data-bs-target="#deleteUserModal"
                             th:attr="data-user-id=${user.id},
-                                     data-user-username=${user.username}">
+                                     data-user-username=${user.username},
+                                     data-user-lastname=${user.lastname},
+                                     data-user-age=${user.age},
+                                     data-user-email=${user.email},
+                                     data-user-roles=${#strings.listJoin(user.roles.![name], ',')}">
                         Delete
                     </button>
                 </td>
@@ -159,7 +193,6 @@
         </table>
     </div>
 
-    <!-- Модальное окно редактирования пользователя -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -167,7 +200,7 @@
                     <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="editUserForm">
+                <form id="editUserForm" method="post" th:action="@{/admin/update/{id}(id=${editUserId})}">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <input type="hidden" id="editUserId" name="id">
                     <div class="modal-body">
@@ -228,20 +261,41 @@
         </div>
     </div>
 
-    <!-- Модальное окно подтверждения удаления -->
     <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="deleteUserModalLabel">Confirm Deletion</h5>
+                    <h5 class="modal-title" id="deleteUserModalLabel">Delete user</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to delete user <span id="deleteUserName"></span>?</p>
-                    <p class="text-danger">This action cannot be undone!</p>
+                    <div class="user-info-row">
+                        <div class="user-info-label">ID</div>
+                        <div class="user-info-value" id="deleteUserIdDisplay"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">First name</div>
+                        <div class="user-info-value" id="deleteUserFirstName"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Last name</div>
+                        <div class="user-info-value" id="deleteUserLastName"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Age</div>
+                        <div class="user-info-value" id="deleteUserAge"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Email</div>
+                        <div class="user-info-value" id="deleteUserEmail"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Role</div>
+                        <div class="user-info-value" id="deleteUserRoles"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <form id="deleteUserForm" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <input type="hidden" id="deleteUserId" name="id">
@@ -251,10 +305,9 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Подключение JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script th:src="@{/js/admin.js}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/admin.js}"></script>
 </body>
 </html>
