@@ -1,285 +1,346 @@
-// admin.js - Полностью самодостаточный JS без HTML
-
-// ===== Глобальные переменные =====
+let allRoles = [];
 let currentUser = null;
+let csrfToken = '';
 
-// ===== Инициализация приложения =====
-document.addEventListener('DOMContentLoaded', () => {
-    document.body.innerHTML = '<div id="app"></div>';
-    checkAuthStatus();
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentUser();
+    loadUsers();
+    loadRoles();
+    setupEventListeners();
 });
 
-// ===== Аутентификация =====
-async function checkAuthStatus() {
-    const token = localStorage.getItem('token');
-    if (!token) return showLoginForm();
-
-    try {
-        const res = await fetch('/api/auth/check', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        currentUser = res.ok ? await res.json() : null;
-        if (currentUser) renderAdminPanel();
-        else showLoginForm();
-    } catch {
-        showLoginForm();
-    }
+function loadCurrentUser() {
+    fetch('/api/user/current')
+        .then(response => response.json())
+        .then(user => {
+            currentUser = user;
+            document.getElementById('currentUserInfo').textContent =
+                `${user.username} with roles: ${user.roles.map(r => r.name.replace('ROLE_', '')).join(' ')}`;
+        })
+        .catch(error => console.error('Error loading current user:', error));
 }
 
-function showLoginForm() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <div class="login-form">
-            <h2>Вход в систему</h2>
-            <form id="loginForm">
-                <input type="text" placeholder="Логин" required>
-                <input type="password" placeholder="Пароль" required>
-                <button type="submit">Войти</button>
-            </form>
-            <div id="loginError" class="error"></div>
-        </div>
-    `;
+function loadUsers() {
+    fetch('/api/admin/users')
+        .then(response => response.json())
+        .then(users => {
+            const tableBody = document.getElementById('usersTableBody');
+            tableBody.innerHTML = '';
 
-    document.getElementById('loginForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const [username, password] = e.target.querySelectorAll('input');
-
-        try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: username.value, password: password.value })
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.lastname}</td>
+                    <td>${user.age}</td>
+                    <td>${user.email}</td>
+                    <td>${user.roles.map(r => r.name.replace('ROLE_', '')).join(', ')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary edit-btn" data-user-id="${user.id}">Edit</button>
+                        <button class="btn btn-sm btn-danger delete-btn" data-user-id="${user.id}">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
             });
 
-            if (res.ok) {
-                const { token, user } = await res.json();
-                localStorage.setItem('token', token);
-                currentUser = user;
-                renderAdminPanel();
-            } else {
-                throw new Error('Неверные данные');
-            }
-        } catch (err) {
-            document.getElementById('loginError').textContent = err.message;
-        }
-    };
-}
-
-// ===== Админ-панель =====
-function renderAdminPanel() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <div class="admin-panel">
-            <header>
-                <h1>Админ-панель</h1>
-                <button id="logoutBtn">Выйти</button>
-            </header>
-            <div class="toolbar">
-                <button id="refreshBtn">Обновить</button>
-                <button id="createUserBtn">+ Новый пользователь</button>
-            </div>
-            <div class="user-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Имя</th>
-                            <th>Email</th>
-                            <th>Роли</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-        <div id="modal" class="modal hidden"></div>
-    `;
-
-    // Навешиваем обработчики
-    document.getElementById('logoutBtn').onclick = logout;
-    document.getElementById('refreshBtn').onclick = loadUsers;
-    document.getElementById('createUserBtn').onclick = showCreateModal;
-
-    loadUsers();
-}
-
-// ===== Работа с пользователями =====
-async function loadUsers() {
-    const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
-
-    try {
-        const res = await fetch('/api/admin/users', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        const users = await res.json();
-
-        tbody.innerHTML = users.map(user => `
-            <tr>
-                <td>${user.id}</td>
-                <td>${user.username}</td>
-                <td>${user.email}</td>
-                <td>${user.roles.map(r => r.name.replace('ROLE_', '')).join(', ')}</td>
-                <td>
-                    <button class="edit" data-id="${user.id}">✏️</button>
-                    <button class="delete" data-id="${user.id}">🗑️</button>
-                </td>
-            </tr>
-        `).join('');
-
-        // Вешаем обработчики кнопок
-        document.querySelectorAll('.edit').forEach(btn => {
-            btn.onclick = () => showEditModal(btn.dataset.id);
-        });
-        document.querySelectorAll('.delete').forEach(btn => {
-            btn.onclick = () => deleteUser(btn.dataset.id);
-        });
-
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5">Ошибка: ${err.message}</td></tr>`;
-    }
-}
-
-// ===== Модальные окна =====
-function showCreateModal() {
-    const modal = document.getElementById('modal');
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3>Создать пользователя</h3>
-            <form id="userForm">
-                <input name="username" placeholder="Логин" required>
-                <input name="email" type="email" placeholder="Email" required>
-                <input name="password" type="password" placeholder="Пароль" required>
-                <div class="roles">
-                    <label><input type="checkbox" name="roles" value="USER" checked> User</label>
-                    <label><input type="checkbox" name="roles" value="ADMIN"> Admin</label>
-                </div>
-                <button type="submit">Сохранить</button>
-                <button type="button" class="cancel">Отмена</button>
-            </form>
-        </div>
-    `;
-    modal.classList.remove('hidden');
-
-    modal.querySelector('.cancel').onclick = () => modal.classList.add('hidden');
-    modal.querySelector('form').onsubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = {
-            username: formData.get('username'),
-            email: formData.get('email'),
-            password: formData.get('password'),
-            roles: formData.getAll('roles')
-        };
-
-        try {
-            await fetch('/api/admin/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(data)
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => showEditUserModal(btn.dataset.userId));
             });
-            modal.classList.add('hidden');
-            loadUsers();
-        } catch (err) {
-            alert(`Ошибка: ${err.message}`);
-        }
-    };
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => showDeleteConfirmation(btn.dataset.userId));
+            });
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            showAlert('Error loading users', 'danger');
+        });
 }
 
-async function showEditModal(userId) {
-    const modal = document.getElementById('modal');
-    modal.innerHTML = '<div class="modal-content">Загрузка...</div>';
-    modal.classList.remove('hidden');
-
-    try {
-        const res = await fetch(`/api/admin/users/${userId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+// Load all roles
+function loadRoles() {
+    fetch('/api/admin/roles')
+        .then(response => response.json())
+        .then(roles => {
+            allRoles = roles;
+            renderRoleCheckboxes('newRolesContainer');
+            renderRoleCheckboxes('editRolesContainer');
+        })
+        .catch(error => {
+            console.error('Error loading roles:', error);
+            showAlert('Error loading roles', 'danger');
         });
-        const user = await res.json();
+}
 
-        modal.innerHTML = `
-            <div class="modal-content">
-                <h3>Редактировать</h3>
-                <form id="userForm">
-                    <input name="username" value="${user.username}" required>
-                    <input name="email" type="email" value="${user.email}" required>
-                    <div class="roles">
-                        <label><input type="checkbox" name="roles" value="USER" ${user.roles.some(r => r.name === 'ROLE_USER') ? 'checked' : ''}> User</label>
-                        <label><input type="checkbox" name="roles" value="ADMIN" ${user.roles.some(r => r.name === 'ROLE_ADMIN') ? 'checked' : ''}> Admin</label>
-                    </div>
-                    <button type="submit">Сохранить</button>
-                    <button type="button" class="cancel">Отмена</button>
-                </form>
+function renderRoleCheckboxes(containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="row"></div>';
+    const row = container.querySelector('.row');
+
+    allRoles.forEach(role => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 mb-2';
+        col.innerHTML = `
+            <div class="form-check">
+                <input class="form-check-input role-checkbox" type="checkbox" 
+                       id="${containerId}-${role.id}" value="${role.id}">
+                <label class="form-check-label" for="${containerId}-${role.id}">
+                    ${role.name.replace('ROLE_', '')}
+                </label>
             </div>
         `;
-
-        modal.querySelector('.cancel').onclick = () => modal.classList.add('hidden');
-        modal.querySelector('form').onsubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = {
-                username: formData.get('username'),
-                email: formData.get('email'),
-                roles: formData.getAll('roles')
-            };
-
-            try {
-                await fetch(`/api/admin/users/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify(data)
-                });
-                modal.classList.add('hidden');
-                loadUsers();
-            } catch (err) {
-                alert(`Ошибка: ${err.message}`);
-            }
-        };
-    } catch (err) {
-        modal.innerHTML = `<div class="modal-content">Ошибка: ${err.message}</div>`;
-    }
+        row.appendChild(col);
+    });
 }
 
-// ===== Вспомогательные функции =====
-async function deleteUser(userId) {
-    if (!confirm('Удалить пользователя?')) return;
-    try {
-        await fetch(`/api/admin/users/${userId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+function showEditUserModal(userId) {
+    fetch(`/api/admin/users/${userId}`)
+        .then(response => response.json())
+        .then(user => {
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('displayId').value = user.id;
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('editLastname').value = user.lastname;
+            document.getElementById('editAge').value = user.age;
+            document.getElementById('editEmail').value = user.email;
+
+            document.querySelectorAll('#editRolesContainer .role-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            user.roles.forEach(role => {
+                const checkbox = document.getElementById(`editRolesContainer-${role.id}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading user:', error);
+            showAlert('Error loading user data', 'danger');
         });
-        loadUsers();
-    } catch (err) {
-        alert(`Ошибка: ${err.message}`);
+}
+
+function updateUser(event) {
+    event.preventDefault();
+
+    const userId = document.getElementById('editUserId').value;
+    const username = document.getElementById('editUsername').value;
+    const lastname = document.getElementById('editLastname').value;
+    const age = document.getElementById('editAge').value;
+    const email = document.getElementById('editEmail').value;
+    const password = document.getElementById('editPassword').value;
+
+    const selectedRoles = [];
+    document.querySelectorAll('#editRolesContainer .role-checkbox:checked').forEach(checkbox => {
+        selectedRoles.push({ id: parseInt(checkbox.value) });
+    });
+
+    const userData = {
+        username,
+        lastname,
+        age: parseInt(age),
+        email,
+        password: password || undefined,
+        roles: selectedRoles
+    };
+
+    fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify(userData)
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(() => {
+            showAlert('User updated successfully', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+            modal.hide();
+            loadUsers();
+        })
+        .catch(error => {
+            console.error('Error updating user:', error);
+            showAlert(error.message || 'Error updating user', 'danger');
+        });
+}
+
+function showNewUserModal() {
+    document.getElementById('newUserForm').reset();
+    const modal = new bootstrap.Modal(document.getElementById('newUserModal'));
+    modal.show();
+}
+
+function createUser(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('newUsername').value;
+    const lastname = document.getElementById('newLastname').value;
+    const age = document.getElementById('newAge').value;
+    const email = document.getElementById('newEmail').value;
+    const password = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (password !== confirmPassword) {
+        showAlert('Passwords do not match', 'danger');
+        return;
     }
+
+    const selectedRoles = [];
+    document.querySelectorAll('#newRolesContainer .role-checkbox:checked').forEach(checkbox => {
+        selectedRoles.push({ id: parseInt(checkbox.value) });
+    });
+
+    const userData = {
+        username,
+        lastname,
+        age: parseInt(age),
+        email,
+        password,
+        roles: selectedRoles
+    };
+
+    fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify(userData)
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(() => {
+            showAlert('User created successfully', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('newUserModal'));
+            modal.hide();
+            loadUsers();
+        })
+        .catch(error => {
+            console.error('Error creating user:', error);
+            showAlert(error.message || 'Error creating user', 'danger');
+        });
 }
 
-function logout() {
-    localStorage.removeItem('token');
-    currentUser = null;
-    showLoginForm();
+function showDeleteConfirmation(userId) {
+    fetch(`/api/admin/users/${userId}`)
+        .then(response => response.json())
+        .then(user => {
+            document.getElementById('deleteUserIdDisplay').textContent = user.id;
+            document.getElementById('deleteUserUsername').textContent = user.username;
+            document.getElementById('deleteUserLastName').textContent = user.lastname;
+            document.getElementById('deleteUserAge').textContent = user.age;
+            document.getElementById('deleteUserEmail').textContent = user.email;
+            document.getElementById('deleteUserRoles').textContent =
+                user.roles.map(r => r.name.replace('ROLE_', '')).join(', ');
+
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.dataset.userId = user.id;
+
+            const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading user:', error);
+            showAlert('Error loading user data', 'danger');
+        });
 }
 
-// ===== Добавляем базовые стили =====
-const style = document.createElement('style');
-style.textContent = `
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    #app { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .login-form { max-width: 300px; margin: 50px auto; }
-    .admin-panel header { display: flex; justify-content: space-between; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-    button { cursor: pointer; padding: 5px 10px; }
-    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
-    .modal-content { background: white; padding: 20px; border-radius: 5px; }
-    .hidden { display: none; }
-    .error { color: red; }
-`;
-document.head.appendChild(style);
+function deleteUser() {
+    const userId = document.getElementById('confirmDeleteBtn').dataset.userId;
+
+    fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete user');
+            }
+            return response;
+        })
+        .then(() => {
+            showAlert('User deleted successfully', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteUserModal'));
+            modal.hide();
+            loadUsers();
+        })
+        .catch(error => {
+            console.error('Error deleting user:', error);
+            showAlert(error.message || 'Error deleting user', 'danger');
+        });
+}
+
+function setupEventListeners() {
+    document.getElementById('editUserForm').addEventListener('submit', updateUser);
+    document.getElementById('newUserForm').addEventListener('submit', createUser);
+    document.getElementById('confirmDeleteBtn').addEventListener('click', deleteUser);
+    document.getElementById('logoutForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        fetch('/api/logout', {
+            method: 'POST'
+        })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Ошибка при выходе');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка при выходе');
+            });
+    });
+
+    document.getElementById('newUserBtn').addEventListener('click', showNewUserModal);
+}
+
+function logout(event) {
+    event.preventDefault();
+    fetch('/logout', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+        .then(() => {
+            window.location.href = '/login';
+        })
+        .catch(error => {
+            console.error('Error logging out:', error);
+            showAlert('Error logging out', 'danger');
+        });
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.querySelector('.alert-container');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+
+    alertContainer.appendChild(alert);
+
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}

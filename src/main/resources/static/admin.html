@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/js/css/admin.css">
+</head>
+<body>
+
+<div class="header">
+    <div id="currentUserInfo"></div>
+    <form id="logoutForm">
+        <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit" class="btn btn-link text-white">Logout</button>
+    </form>
+</div>
+
+<div class="alert-container"></div>
+
+<div class="sidebar">
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link active" href="#" id="adminLink">Admin</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/user" id="userLink">User</a>
+        </li>
+    </ul>
+</div>
+
+<div class="content main-content">
+    <h2>Admin panel</h2>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Users table</h4>
+        <button id="newUserBtn" class="btn btn-primary">New User</button>
+    </div>
+
+    <h5>All users</h5>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Last Name</th>
+                <th>Age</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="usersTableBody">
+
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ID</label>
+                                <input type="text" class="form-control" id="displayId" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editUsername" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="editUsername" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editLastname" class="form-label">Last name</label>
+                                <input type="text" class="form-control" id="editLastname" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editAge" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="editAge" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editPassword" class="form-label">Password (leave empty to keep current)</label>
+                                <input type="password" class="form-control" id="editPassword">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Roles</label>
+                            <div class="roles-container" id="editRolesContainer">
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" id="saveEditBtn">
+                            Save changes
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="newUserModal" tabindex="-1" aria-labelledby="newUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newUserModalLabel">New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="newUserForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="newUsername" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="newUsername" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="newLastname" class="form-label">Last name</label>
+                                <input type="text" class="form-control" id="newLastname" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="newAge" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="newAge" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="newEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="newEmail" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="newPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="newPassword" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Roles</label>
+                            <div class="roles-container" id="newRolesContainer">
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" id="saveNewBtn">
+                            Create User
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteUserModalLabel">Delete user</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="user-info-row">
+                        <div class="user-info-label">ID</div>
+                        <div class="user-info-value" id="deleteUserIdDisplay"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Username</div>
+                        <div class="user-info-value" id="deleteUserUsername"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Last name</div>
+                        <div class="user-info-value" id="deleteUserLastName"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Age</div>
+                        <div class="user-info-value" id="deleteUserAge"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Email</div>
+                        <div class="user-info-value" id="deleteUserEmail"></div>
+                    </div>
+                    <div class="user-info-row">
+                        <div class="user-info-label">Role</div>
+                        <div class="user-info-value" id="deleteUserRoles"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        Delete
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/admin.js"></script>
+</body>
+</html>
