@@ -24,8 +24,10 @@ public class UserController {
         this.userService = userService;
     }
 
+
     @GetMapping("/current")
     public ResponseEntity<UserDto> getCurrentUser(Principal principal) {
+        System.out.println("Current user: " + principal.getName());
         String username = principal.getName();
         UserDto userDto = userService.findByUsername(username);
         if (userDto == null) {

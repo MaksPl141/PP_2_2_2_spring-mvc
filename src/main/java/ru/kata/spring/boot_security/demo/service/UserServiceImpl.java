@@ -92,8 +92,6 @@ public class UserServiceImpl implements UserService {
                 .orElse(null);
     }
 
-    // ----- DTO ↔ ENTITY conversion -----
-
     private UserDto convertToDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());

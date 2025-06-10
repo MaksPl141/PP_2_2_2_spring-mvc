@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadCurrentUser() {
-    fetch('/api/user/current')
+    fetch('/api/user/current' , { credentials: 'include' })
         .then(response => response.json())
         .then(user => {
             currentUser = user;
@@ -21,7 +21,7 @@ function loadCurrentUser() {
 }
 
 function loadUsers() {
-    fetch('/api/admin/users')
+    fetch('/api/admin/users', { credentials: 'include' })
         .then(response => response.json())
         .then(users => {
             const tableBody = document.getElementById('usersTableBody');
@@ -60,7 +60,7 @@ function loadUsers() {
 
 // Load all roles
 function loadRoles() {
-    fetch('/api/admin/roles')
+    fetch('/api/admin/roles', { credentials: 'include' })
         .then(response => response.json())
         .then(roles => {
             allRoles = roles;
@@ -95,7 +95,7 @@ function renderRoleCheckboxes(containerId) {
 }
 
 function showEditUserModal(userId) {
-    fetch(`/api/admin/users/${userId}`)
+    fetch(`/api/admin/users/${userId}`, { credentials: 'include' })
         .then(response => response.json())
         .then(user => {
             document.getElementById('editUserId').value = user.id;
@@ -235,7 +235,7 @@ function createUser(event) {
 }
 
 function showDeleteConfirmation(userId) {
-    fetch(`/api/admin/users/${userId}`)
+    fetch(`/api/admin/users/${userId}`, { credentials: 'include' })
         .then(response => response.json())
         .then(user => {
             document.getElementById('deleteUserIdDisplay').textContent = user.id;

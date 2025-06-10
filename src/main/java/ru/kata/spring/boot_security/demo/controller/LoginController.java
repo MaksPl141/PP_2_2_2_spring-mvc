@@ -10,7 +10,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
@@ -29,7 +31,8 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials, HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials,
+                                                     HttpServletRequest request) {
         String username = credentials.get("username");
         String password = credentials.get("password");
 
@@ -42,20 +45,38 @@ public class LoginController {
             request.getSession(true);
 
             Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+
+            String role = "USER";
             String redirectUrl = "/user.html";
 
             if (authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                role = "ADMIN";
                 redirectUrl = "/admin.html";
+            } else if (authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER"))) {
+                role = "USER";
+                redirectUrl = "/user.html";
             }
+
+            System.out.println("User '" + username + "' logged in with role: " + role);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Login successful");
             response.put("redirectUrl", redirectUrl);
+            response.put("role", role);
+            response.put("username", username);
+
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            request.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+
 
             return ResponseEntity.ok(response);
 
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid login"));
+            System.err.println("Login failed for user '" + username + "': " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid username or password"));
         }
     }
 }

@@ -74,7 +74,6 @@ public class User implements UserDetails {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public boolean isAccountNonExpired() {
         return true;
